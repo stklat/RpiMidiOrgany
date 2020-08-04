@@ -1,0 +1,55 @@
+# depslib dependency file v1.0
+1595246279 source:/home/stanislaw/Pulpit/Midi/Midi/main.cpp
+	<iostream>
+	<cstdlib>
+	"RtMidi.h"
+
+1555590958 source:/home/stanislaw/Pulpit/Midi/Midi/RtMidi.cpp
+	"RtMidi.h"
+	<sstream>
+	<CoreMIDI/CoreMIDI.h>
+	<CoreAudio/HostTime.h>
+	<CoreServices/CoreServices.h>
+	<pthread.h>
+	<sys/time.h>
+	<alsa/asoundlib.h>
+	<windows.h>
+	<mmsystem.h>
+	<jack/jack.h>
+	<jack/midiport.h>
+	<jack/ringbuffer.h>
+	<semaphore.h>
+
+1595246826 /home/stanislaw/Pulpit/Midi/Midi/RtMidi.h
+	<exception>
+	<iostream>
+	<string>
+	<vector>
+
+1595246279 source:/home/stanislaw/Pulpit/Midi/main.cpp
+	<iostream>
+	<cstdlib>
+	"RtMidi.h"
+
+1595417111 /home/stanislaw/Pulpit/Midi/RtMidi.h
+	<exception>
+	<iostream>
+	<string>
+	<vector>
+
+1555590958 source:/home/stanislaw/Pulpit/Midi/RtMidi.cpp
+	"RtMidi.h"
+	<sstream>
+	<CoreMIDI/CoreMIDI.h>
+	<CoreAudio/HostTime.h>
+	<CoreServices/CoreServices.h>
+	<pthread.h>
+	<sys/time.h>
+	<alsa/asoundlib.h>
+	<windows.h>
+	<mmsystem.h>
+	<jack/jack.h>
+	<jack/midiport.h>
+	<jack/ringbuffer.h>
+	<semaphore.h>
+
