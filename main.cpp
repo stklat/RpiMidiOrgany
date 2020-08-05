@@ -2,7 +2,7 @@
 -LISTA POŁĄCZEŃ TWORZONA ZA POMOCĄ PADA,
 -OTWIERANIE PORTÓW POSZCZEGÓLNYCH URZĄDZEŃ MIMO ZAPOBIEGAJĄC PRZYPADKOWI ICH PRZEŁĄCZENIA,
 -Obniżanie oktawy,
-
+-Błąd ucinanych note off-ów ???
 */
 #include <iostream>
 #include <signal.h>
@@ -119,7 +119,7 @@ void SendToSelectedChn(unsigned char ucDeviceNumber, std::vector<unsigned char> 
     unsigned char temp_2 = 0;
     for(unsigned char i = 0; temp<ucElementInList[ucDeviceNumber]; i++) //i<12
     {
-        if(ON==bList[ucDeviceNumber][i+1])
+        if(ON==bList[ucDeviceNumber][i+1] && (*vucMessage)[2]!=0)
         {
             temp_2 = i + 1;
             messageout2[0] = ucChnChange((*vucMessage)[0], temp_2);
@@ -127,6 +127,17 @@ void SendToSelectedChn(unsigned char ucDeviceNumber, std::vector<unsigned char> 
             messageout2[2] = (*vucMessage)[2];
             midiout2->sendMessage(&messageout2);
             temp++;
+        }
+        else if((*vucMessage)[2]==0 && ucActiveNotes[ucDeviceNumber]!=0)
+        {
+            messageout2[0] = ucChnChange((*vucMessage)[0], temp_2);
+            messageout2[1] = (*vucMessage)[1];
+            messageout2[2] = (*vucMessage)[2];
+            midiout2->sendMessage(&messageout2);
+            if(ON==bList[ucDeviceNumber][i+1])
+            {
+                temp++;
+            }
         }
         usleep(10);
     }
@@ -152,8 +163,8 @@ void thread_two()
     unsigned int g;
     while ( !done )
     {
-        midiin2->getMessage( &messagein2 );
-        nBytes2 = messagein2.size();
+        midiin2->getMessage( &messagein2 ); //pobieranie nut od portów do wektorów
+        nBytes2 = messagein2.size(); //ilość bitów wiadomości
         midiin3->getMessage( &messagein3 );
         nBytes3 = messagein3.size();
         midiin4->getMessage( &messagein4 );
@@ -169,20 +180,30 @@ void thread_two()
                 std::cout << "Byte " << g << " = " << (int)messagein2[g] << ", " << std::endl;
             }*/
         }
-        if((nBytes2 > 0) && (3==ucGetChannel(messagein2[0]))) //klawiatura górna/dolna
+        if((nBytes2 > 0) && (3==ucGetChannel(messagein2[0]))) //zarządzanie nutami odebranymi od klawiatury górnej
         {
             //messagein2[1] = ucChangeNoteOctave(messagein2[1], DOWN, 1);
             SendToSelectedChn(0, &messagein2);
             ActiveNotesCountChange(0, &messagein2);
-            usleep(10);
+            //wysyłanie z powrotem do pianina
+            /*messageout3[0] = ucChnChange(messagein2[0], 4);
+            messageout3[1] = messagein2[1];
+            messageout3[2] = messagein2[2];
+            midiout3->sendMessage(&messageout3);*/
+            usleep(30);
         }
-        else if((nBytes2 > 0) && (2==ucGetChannel(messagein2[0])))
+        else if((nBytes2 > 0) && (2==ucGetChannel(messagein2[0]))) //zarządzanie nutami odebranymi od klawiatury dolnej
         {
             SendToSelectedChn(1, &messagein2);
             ActiveNotesCountChange(1, &messagein2);
-            usleep(10);
+            //wysyłanie z powrotem do pianina
+            /*messageout3[0] = ucChnChange(messagein2[0], 4);
+            messageout3[1] = messagein2[1];
+            messageout3[2] = messagein2[2];
+            midiout3->sendMessage(&messageout3);*/
+            usleep(30);
         }
-        for ( g=0; g<nBytes3; g++ )
+        for ( g=0; g<nBytes3; g++ ) //podgląd nut wysyłanych przez pianino
         {
             /*if(g==0 || g==1)
             {
@@ -194,14 +215,14 @@ void thread_two()
             }*/
 
         }
-        if(nBytes3 > 0)
+        if(nBytes3 > 0) //zarządzanie nutami odebranymi przez pianino
         {
             //messagein3[1] = ucChangeNoteOctave(messagein3[1], DOWN, 1);
             SendToSelectedChn(2, &messagein3);
             ActiveNotesCountChange(2, &messagein3);
-            usleep(10);
+            usleep(30);
         }
-        for ( g=0; g<nBytes4; g++ )
+        for ( g=0; g<nBytes4; g++ ) //podgląd nut wysyłanych przez pedały
         {
             /*if(g==0 || g==1)
             {
@@ -213,12 +234,16 @@ void thread_two()
             }
 	    */
         }
-        if(nBytes4 > 0)
+        if(nBytes4 > 0) //zarządzanie nutami odebranymi od pedałów
         {
-            //messagein3[1] = ucChangeNoteOctave(messagein3[1], DOWN, 1);
             SendToSelectedChn(3, &messagein4);
             ActiveNotesCountChange(3, &messagein4);
-            usleep(10);
+            //wysyłanie z powrotem do pianina z obniżeniem oktawy
+            /*messageout3[0] = ucChnChange(messagein4[0], 4);
+            messageout3[1] = ucChangeNoteOctave(messagein4[1], DOWN, 1);
+            messageout3[2] = messagein4[2];
+            midiout3->sendMessage(&messageout3);*/
+            usleep(30);
         }
     }
 }
@@ -230,7 +255,7 @@ void thread_one()
     {
         midiin->getMessage( &messagein );
         nBytes = messagein.size();
-        for ( i=0; i<nBytes; i++ )
+        for ( i=0; i<nBytes; i++ ) //podgląd wiadomości odbieranych od pada
         {
             /*if((messagein[i] & 0x80))
             {
@@ -241,19 +266,12 @@ void thread_one()
                 std::cout << "Byte " << i << " = " << (int)messagein[i] << std::endl;
             }*/
         }
-        if ( (nBytes > 0) && (messagein[2] != 0))
+        if ( (nBytes > 0) && (messagein[2] != 0)) //
         {
             ucChannel = ucDecodeNoteToChn(messagein[1], &urzadzenie);
             ChangeChannelState(bList, messagein[1], ucChannel, urzadzenie);
-            /*char j, k;
-            for(j=0; j<4; j++)
-            {
-                for(k=1; k<13; k++)
-                {
-                    std::cout << bList[j][k] << " ";
-                }
-                std::cout << ucElementInList[k] << std::endl;
-            }*/
+            //podgląd tablicy bList
+            //char j, k; for(j=0; j<4; j++) { for(k=1; k<13; k++) { std::cout << bList[j][k] << " "; } std::cout << ucElementInList[k] << std::endl; }
         }
     }
 
@@ -313,13 +331,18 @@ void init()
         {
             midiout2->openPort(i);
         }
+        else if((in3.compare(0, 22, midiout3->getPortName(i).substr(0,22))==0))
+        {
+            midiout3->openPort(i);
+        }
     }
     std::cout << "Czy port 1 in jest otwarty: " << (int)midiin->isPortOpen() << std::endl;
     std::cout << "Czy port 1 out jest otwarty: " << (int)midiout->isPortOpen() << std::endl;
     std::cout << "Czy port 2 in jest otwarty: " << (int)midiin2->isPortOpen() << std::endl;
     std::cout << "Czy port 2 out jest otwarty: " << (int)midiout2->isPortOpen() << std::endl;
     std::cout << "Czy port 3 in jest otwarty: " << (int)midiin3->isPortOpen() << std::endl;
-    std::cout << "Czy port 4 in jest otwarty: " << (int)midiin4->isPortOpen() << std::endl;
+    std::cout << "Czy port 4 in jest otwarty(pianino): " << (int)midiin4->isPortOpen() << std::endl;
+    std::cout << "Czy port 4 out jest otwarty(pianino): " << (int)midiout3->isPortOpen() << std::endl;
 
     midiin->ignoreTypes( false, false, false ); // Don't ignore sysex, timing, or active sensing messages.
     midiin2->ignoreTypes( false, false, false );
