@@ -2320,12 +2320,13 @@ void MidiOutAlsa :: sendMessage( const unsigned char *message, size_t size )
   snd_seq_ev_set_direct( &ev );
   for ( unsigned int i=0; i<nBytes; ++i ) data->buffer[i] = message[i];
   result = snd_midi_event_encode( data->coder, data->buffer, (long)nBytes, &ev );
+  /*
   if ( result < (int)nBytes ) {
     errorString_ = "MidiOutAlsa::sendMessage: event parsing error!";
     error( RtMidiError::WARNING, errorString_ );
     return;
   }
-
+  */
   // Send the event.
   result = snd_seq_event_output( data->seq, &ev );
   if ( result < 0 ) {
